@@ -160,6 +160,18 @@ instance Ord Declaration where
     compare DFallback {} DEvent {} = GT
     compare DFallback {} DError {} = GT
 
+$(deriveToJSON
+   (defaultOptions {
+       sumEncoding = TaggedObject "type" "contents"
+       , constructorTagModifier = over _head toLower . drop 1
+       , fieldLabelModifier = over _head toLower . drop 3 })
+   ''Declaration)
+
+$(deriveJSON (defaultOptions {
+    sumEncoding = TaggedObject "stateMutability" "contents"
+  , constructorTagModifier = fmap toLower . drop 2 })
+    ''StateMutability)
+
 instance FromJSON Declaration where
   parseJSON = withObject "Declaration" $ \o -> do
     t :: Text <- o .: "type"
@@ -175,19 +187,6 @@ instance FromJSON Declaration where
           o .:? "stateMutability" >>= \case
             Nothing -> o .: "constant"
             Just sm -> pure $ sm `elem` [SMPure, SMView]
-
-$(deriveToJSON
-   (defaultOptions {
-       sumEncoding = TaggedObject "type" "contents"
-       , constructorTagModifier = over _head toLower . drop 1
-       , fieldLabelModifier = over _head toLower . drop 3 })
-   ''Declaration)
-
-$(deriveJSON (defaultOptions {
-    sumEncoding = TaggedObject "stateMutability" "contents"
-  , constructorTagModifier = fmap toLower . drop 2 })
-    ''StateMutability)
-
 
 -- | Contract Abi is a list of method / event declarations
 newtype ContractAbi = ContractAbi { unAbi :: [Declaration] }
